@@ -11,7 +11,7 @@ export default function RSVPForm({ id }: RSVPFormProps) {
 
   const handleWhatsAppClick = () => {
     // Placeholder number, waiting for user input
-    const phoneNumber = '5491100000000';
+    const phoneNumber = '5491121543734';
     const message = attending
       ? '¡Hola! Quiero confirmar mi asistencia a los 15 de Bianca'
       : 'Hola, lamentablemente no podré asistir a los 15 de Bianca.';
