@@ -26,7 +26,14 @@ export default function EventDetails({ id }: EventDetailsProps) {
       icon: Gem,
       title: 'Vestimenta',
       content: 'ELEGANTE',
-      subtitle: 'Luce tu mejor outfit formal',
+      subtitle: (
+        <div className="flex flex-col items-center gap-1">
+          <span>Luce tu mejor outfit formal</span>
+          <span className="text-sm font-semibold text-[#FFD700] mt-2 drop-shadow-md">
+            ⚠️ No está permitido usar ropa azul o plateada
+          </span>
+        </div>
+      ),
       delay: 0.6
     },
     {
