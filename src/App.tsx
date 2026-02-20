@@ -15,14 +15,20 @@ function App() {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
   const hasStartedRef = useRef(false);
+  const audioInitializedRef = useRef(false);
 
-  // Función simple y directa para reproducir el audio
+  // Función ultra-robusta para reproducir el audio
   const startAudio = useCallback(async () => {
     if (hasStartedRef.current) return;
     
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio) {
+      // Si el audio aún no existe, esperar un momento y reintentar
+      setTimeout(() => startAudio(), 50);
+      return;
+    }
 
     // Si ya está reproduciéndose, no hacer nada
     if (!audio.paused) {
@@ -30,27 +36,50 @@ function App() {
       return;
     }
 
-    // Asegurar que el audio esté cargado
-    if (audio.readyState === 0) {
+    // Asegurar que el audio esté completamente cargado
+    if (audio.readyState < 2) {
       audio.load();
+      // Esperar a que esté listo
+      await new Promise<void>((resolve) => {
+        const checkReady = () => {
+          if (audio.readyState >= 2) {
+            audio.removeEventListener('canplay', checkReady);
+            audio.removeEventListener('loadeddata', checkReady);
+            resolve();
+          }
+        };
+        audio.addEventListener('canplay', checkReady);
+        audio.addEventListener('loadeddata', checkReady);
+        // Timeout de seguridad
+        setTimeout(resolve, 500);
+      });
     }
 
+    // Múltiples intentos de reproducción
     try {
-      // Intentar reproducir directamente
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         await playPromise;
         hasStartedRef.current = true;
+        setHasStarted(true);
+        return;
       }
     } catch (error) {
-      // Si falla, intentar de nuevo inmediatamente sin await
+      // Intentar de nuevo inmediatamente
       try {
-        audio.play().catch(() => {
-          // Silenciar errores adicionales
+        audio.play().then(() => {
+          hasStartedRef.current = true;
+          setHasStarted(true);
+        }).catch(() => {
+          // Último intento después de un breve delay
+          setTimeout(() => {
+            audio.play().catch(() => {});
+            hasStartedRef.current = true;
+            setHasStarted(true);
+          }, 100);
         });
-        hasStartedRef.current = true;
       } catch (e) {
-        // Ignorar errores
+        // Ignorar errores finales
       }
     }
   }, []);
@@ -58,69 +87,74 @@ function App() {
   // Configurar el audio cuando el componente se monta
   useEffect(() => {
     const audio = audioRef.current;
-    if (audio) {
+    if (audio && !audioInitializedRef.current) {
+      audioInitializedRef.current = true;
       audio.volume = 0.7;
       audio.loop = true;
       audio.preload = 'auto';
       
-      // Precargar inmediatamente
+      // Precargar inmediatamente y asegurar que esté listo
       audio.load();
+      
+      // Intentar reproducir automáticamente si es posible
+      setTimeout(() => {
+        if (!hasStartedRef.current) {
+          audio.play().catch(() => {
+            // El autoplay fue bloqueado, esperar interacción del usuario
+          });
+        }
+      }, 200);
     }
   }, []);
 
-  // Función para manejar cualquier interacción del usuario
-  const handleInteraction = useCallback(() => {
-    startAudio();
+  // Handler ultra-agresivo que captura TODOS los eventos posibles
+  const handleAnyInteraction = useCallback(() => {
+    if (!hasStartedRef.current) {
+      startAudio();
+    }
   }, [startAudio]);
 
-  // Agregar listeners globales de forma más simple y directa
+  // Agregar listeners en TODOS los niveles posibles
   useEffect(() => {
-    // Función que se ejecuta en cualquier interacción
-    const globalHandler = () => {
-      if (!hasStartedRef.current) {
-        startAudio();
-      }
-    };
+    // Todos los eventos posibles de interacción
+    const allEvents = [
+      'touchstart', 'touchend', 'touchmove', 'touchcancel',
+      'pointerdown', 'pointerup', 'pointermove',
+      'mousedown', 'mouseup', 'mousemove',
+      'click', 'dblclick',
+      'keydown', 'keyup', 'keypress',
+      'scroll', 'wheel', 'touch',
+      'gesturestart', 'gesturechange', 'gestureend'
+    ];
 
-    // Eventos más importantes para móviles - usar passive: true para mejor rendimiento
-    const touchEvents = ['touchstart', 'touchend'];
-    const otherEvents = ['click', 'pointerdown', 'mousedown', 'keydown'];
+    // Agregar listeners en TODOS los niveles
+    const targets = [document, window, document.body, document.documentElement];
     
-    // Agregar listeners en fase de captura para capturarlos primero
-    touchEvents.forEach((event) => {
-      document.addEventListener(event, globalHandler, { capture: true, passive: true });
-      window.addEventListener(event, globalHandler, { capture: true, passive: true });
-      document.body.addEventListener(event, globalHandler, { capture: true, passive: true });
+    allEvents.forEach((eventName) => {
+      targets.forEach((target) => {
+        try {
+          target.addEventListener(eventName, handleAnyInteraction, { 
+            capture: true, 
+            passive: true 
+          });
+        } catch (e) {
+          // Ignorar errores de eventos no soportados
+        }
+      });
     });
-
-    otherEvents.forEach((event) => {
-      document.addEventListener(event, globalHandler, { capture: true, passive: true });
-      window.addEventListener(event, globalHandler, { capture: true, passive: true });
-    });
-
-    // También escuchar scroll
-    const scrollHandler = () => {
-      if (!hasStartedRef.current) {
-        startAudio();
-      }
-    };
-    window.addEventListener('scroll', scrollHandler, { passive: true });
-    document.addEventListener('scroll', scrollHandler, { passive: true });
 
     return () => {
-      touchEvents.forEach((event) => {
-        document.removeEventListener(event, globalHandler, { capture: true });
-        window.removeEventListener(event, globalHandler, { capture: true });
-        document.body.removeEventListener(event, globalHandler, { capture: true });
+      allEvents.forEach((eventName) => {
+        targets.forEach((target) => {
+          try {
+            target.removeEventListener(eventName, handleAnyInteraction, { capture: true });
+          } catch (e) {
+            // Ignorar errores
+          }
+        });
       });
-      otherEvents.forEach((event) => {
-        document.removeEventListener(event, globalHandler, { capture: true });
-        window.removeEventListener(event, globalHandler, { capture: true });
-      });
-      window.removeEventListener('scroll', scrollHandler);
-      document.removeEventListener('scroll', scrollHandler);
     };
-  }, [startAudio]);
+  }, [handleAnyInteraction]);
 
   // Limpiar el audio al desmontar
   useEffect(() => {
@@ -162,11 +196,34 @@ function App() {
   return (
     <div 
       className="relative min-h-screen bg-[#0A0A23]"
-      onClick={handleInteraction}
-      onTouchStart={handleInteraction}
-      onPointerDown={handleInteraction}
+      onClick={handleAnyInteraction}
+      onTouchStart={handleAnyInteraction}
+      onTouchEnd={handleAnyInteraction}
+      onPointerDown={handleAnyInteraction}
+      onPointerUp={handleAnyInteraction}
+      onMouseDown={handleAnyInteraction}
+      onMouseUp={handleAnyInteraction}
+      onKeyDown={handleAnyInteraction}
       style={{ touchAction: 'manipulation', WebkitTouchCallout: 'none' }}
     >
+      {/* Wrapper invisible que captura absolutamente todos los eventos */}
+      {!hasStarted && (
+        <div
+          className="fixed inset-0 z-[99999]"
+          onClick={handleAnyInteraction}
+          onTouchStart={handleAnyInteraction}
+          onTouchEnd={handleAnyInteraction}
+          onPointerDown={handleAnyInteraction}
+          onPointerUp={handleAnyInteraction}
+          onMouseDown={handleAnyInteraction}
+          style={{ 
+            touchAction: 'manipulation',
+            pointerEvents: 'auto',
+            WebkitTapHighlightColor: 'transparent'
+          }}
+        />
+      )}
+
       {/* Elemento audio HTML con todas las optimizaciones para móviles */}
       <audio
         ref={audioRef}
@@ -177,8 +234,18 @@ function App() {
         autoPlay
         muted={false}
         style={{ display: 'none' }}
-        onPlay={() => setIsPlaying(true)}
+        onPlay={() => {
+          setIsPlaying(true);
+          hasStartedRef.current = true;
+          setHasStarted(true);
+        }}
         onPause={() => setIsPlaying(false)}
+        onLoadedData={() => {
+          // Cuando el audio está listo, intentar reproducir si aún no se ha iniciado
+          if (!hasStartedRef.current && audioRef.current) {
+            audioRef.current.play().catch(() => {});
+          }
+        }}
       />
 
       <button
