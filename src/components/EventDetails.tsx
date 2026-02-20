@@ -142,9 +142,9 @@ export default function EventDetails({ id }: EventDetailsProps) {
                 {detail.content}
               </p>
 
-              <p className="text-[#C0C0C0]/90 text-lg font-medium tracking-wide uppercase" style={{ fontFamily: "'Poppins', sans-serif" }}>
+              <div className="text-[#C0C0C0]/90 text-lg font-medium tracking-wide uppercase" style={{ fontFamily: "'Poppins', sans-serif" }}>
                 {detail.subtitle}
-              </p>
+              </div>
 
               {detail.hasMap && (
                 <div className="mt-6 w-full h-48 rounded-2xl overflow-hidden shadow-2xl border border-[#C0C0C0]/20 relative z-20 group-hover:border-[#C0C0C0]/40 transition-colors duration-300">

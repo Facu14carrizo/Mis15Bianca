@@ -15,146 +15,75 @@ function App() {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [hasStarted, setHasStarted] = useState(false);
-  const hasStartedRef = useRef(false);
-  const audioInitializedRef = useRef(false);
+  const userInteracted = useRef(false);
 
-  // Función ultra-robusta para reproducir el audio
-  const startAudio = useCallback(async () => {
-    if (hasStartedRef.current) return;
-    
-    const audio = audioRef.current;
-    if (!audio) {
-      // Si el audio aún no existe, esperar un momento y reintentar
-      setTimeout(() => startAudio(), 50);
-      return;
-    }
-
-    // Si ya está reproduciéndose, no hacer nada
-    if (!audio.paused) {
-      hasStartedRef.current = true;
-      return;
-    }
-
-    // Asegurar que el audio esté completamente cargado
-    if (audio.readyState < 2) {
-      audio.load();
-      // Esperar a que esté listo
-      await new Promise<void>((resolve) => {
-        const checkReady = () => {
-          if (audio.readyState >= 2) {
-            audio.removeEventListener('canplay', checkReady);
-            audio.removeEventListener('loadeddata', checkReady);
-            resolve();
-          }
-        };
-        audio.addEventListener('canplay', checkReady);
-        audio.addEventListener('loadeddata', checkReady);
-        // Timeout de seguridad
-        setTimeout(resolve, 500);
-      });
-    }
-
-    // Múltiples intentos de reproducción
-    try {
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        await playPromise;
-        hasStartedRef.current = true;
-        setHasStarted(true);
-        return;
-      }
-    } catch (error) {
-      // Intentar de nuevo inmediatamente
-      try {
-        audio.play().then(() => {
-          hasStartedRef.current = true;
-          setHasStarted(true);
-        }).catch(() => {
-          // Último intento después de un breve delay
-          setTimeout(() => {
-            audio.play().catch(() => {});
-            hasStartedRef.current = true;
-            setHasStarted(true);
-          }, 100);
-        });
-      } catch (e) {
-        // Ignorar errores finales
+  // Función para obtener o crear el audio
+  const getAudio = () => {
+    if (!audioRef.current) {
+      // Si no existe, buscar el elemento en el DOM
+      const audioElement = document.querySelector('audio[src="/love..mp3"]') as HTMLAudioElement;
+      if (audioElement) {
+        audioRef.current = audioElement;
       }
     }
-  }, []);
+    return audioRef.current;
+  };
 
   // Configurar el audio cuando el componente se monta
   useEffect(() => {
-    const audio = audioRef.current;
-    if (audio && !audioInitializedRef.current) {
-      audioInitializedRef.current = true;
-      audio.volume = 0.7;
-      audio.loop = true;
-      audio.preload = 'auto';
-      
-      // Precargar inmediatamente y asegurar que esté listo
-      audio.load();
-      
-      // Intentar reproducir automáticamente si es posible
-      setTimeout(() => {
-        if (!hasStartedRef.current) {
-          audio.play().catch(() => {
-            // El autoplay fue bloqueado, esperar interacción del usuario
-          });
-        }
-      }, 200);
-    }
+    // Esperar un momento para que el DOM esté listo
+    const timer = setTimeout(() => {
+      const audio = getAudio();
+      if (audio) {
+        audio.volume = 0.7;
+        audio.loop = true;
+        
+        // Intentar reproducir automáticamente
+        audio.play().catch(() => {
+          // El navegador bloqueó el autoplay, se activará con interacción
+        });
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, []);
 
-  // Handler ultra-agresivo que captura TODOS los eventos posibles
-  const handleAnyInteraction = useCallback(() => {
-    if (!hasStartedRef.current) {
-      startAudio();
-    }
-  }, [startAudio]);
-
-  // Agregar listeners en TODOS los niveles posibles
+  // Reproducir música cuando el usuario interactúa con la página (excepto en el botón)
   useEffect(() => {
-    // Todos los eventos posibles de interacción
-    const allEvents = [
-      'touchstart', 'touchend', 'touchmove', 'touchcancel',
-      'pointerdown', 'pointerup', 'pointermove',
-      'mousedown', 'mouseup', 'mousemove',
-      'click', 'dblclick',
-      'keydown', 'keyup', 'keypress',
-      'scroll', 'wheel', 'touch',
-      'gesturestart', 'gesturechange', 'gestureend'
-    ];
+    const handleUserInteraction = async (e: Event) => {
+      // Ignorar clicks en el botón de música - verificar por clase o atributo específico
+      const target = e.target as HTMLElement;
+      const button = target.closest('button[type="button"]');
+      if (button && button.textContent?.includes('música')) {
+        return;
+      }
 
-    // Agregar listeners en TODOS los niveles
-    const targets = [document, window, document.body, document.documentElement];
-    
-    allEvents.forEach((eventName) => {
-      targets.forEach((target) => {
-        try {
-          target.addEventListener(eventName, handleAnyInteraction, { 
-            capture: true, 
-            passive: true 
-          });
-        } catch (e) {
-          // Ignorar errores de eventos no soportados
+      const audio = getAudio();
+      if (!userInteracted.current && audio) {
+        userInteracted.current = true;
+        if (audio.paused) {
+          try {
+            await audio.play();
+            setIsPlaying(true);
+          } catch (error) {
+            // Error al reproducir
+          }
         }
-      });
+      }
+    };
+
+    // Escuchar eventos de interacción
+    const events = ['click', 'touchstart', 'scroll', 'keydown'];
+    events.forEach((event) => {
+      document.addEventListener(event, handleUserInteraction, { once: true });
     });
 
     return () => {
-      allEvents.forEach((eventName) => {
-        targets.forEach((target) => {
-          try {
-            target.removeEventListener(eventName, handleAnyInteraction, { capture: true });
-          } catch (e) {
-            // Ignorar errores
-          }
-        });
+      events.forEach((event) => {
+        document.removeEventListener(event, handleUserInteraction);
       });
     };
-  }, [handleAnyInteraction]);
+  }, []);
 
   // Limpiar el audio al desmontar
   useEffect(() => {
@@ -173,85 +102,68 @@ function App() {
     }
   };
 
-  const togglePlayback = async (e?: React.MouseEvent) => {
-    // Si es el primer click, activar el audio
-    if (!hasStartedRef.current) {
-      e?.preventDefault();
-      e?.stopPropagation();
-      await startAudio();
+  const togglePlayback = async (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    // Pequeño delay para asegurar que el evento se procese correctamente
+    await new Promise(resolve => setTimeout(resolve, 0));
+    
+    const audio = getAudio();
+    if (!audio) {
       return;
     }
 
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    if (audio.paused) {
-      await startAudio();
-    } else {
+    // Verificar el estado real del audio directamente
+    const currentlyPlaying = !audio.paused;
+    
+    if (currentlyPlaying) {
+      // Si está reproduciéndose, pausar
       audio.pause();
       setIsPlaying(false);
+    } else {
+      // Si está pausado, reproducir
+      try {
+        await audio.play();
+        setIsPlaying(true);
+      } catch (error) {
+        console.error('Error al reproducir:', error);
+        setIsPlaying(false);
+      }
     }
   };
 
   return (
-    <div 
-      className="relative min-h-screen bg-[#0A0A23]"
-      onClick={handleAnyInteraction}
-      onTouchStart={handleAnyInteraction}
-      onTouchEnd={handleAnyInteraction}
-      onPointerDown={handleAnyInteraction}
-      onPointerUp={handleAnyInteraction}
-      onMouseDown={handleAnyInteraction}
-      onMouseUp={handleAnyInteraction}
-      onKeyDown={handleAnyInteraction}
-      style={{ touchAction: 'manipulation', WebkitTouchCallout: 'none' }}
-    >
-      {/* Wrapper invisible que captura absolutamente todos los eventos */}
-      {!hasStarted && (
-        <div
-          className="fixed inset-0 z-[99999]"
-          onClick={handleAnyInteraction}
-          onTouchStart={handleAnyInteraction}
-          onTouchEnd={handleAnyInteraction}
-          onPointerDown={handleAnyInteraction}
-          onPointerUp={handleAnyInteraction}
-          onMouseDown={handleAnyInteraction}
-          style={{ 
-            touchAction: 'manipulation',
-            pointerEvents: 'auto',
-            WebkitTapHighlightColor: 'transparent'
-          }}
-        />
-      )}
-
-      {/* Elemento audio HTML con todas las optimizaciones para móviles */}
+    <div className="relative min-h-screen bg-[#0A0A23]">
+      {/* Elemento audio HTML con autoplay para mejor compatibilidad */}
       <audio
-        ref={audioRef}
+        ref={(el) => {
+          audioRef.current = el;
+          if (el) {
+            el.volume = 0.7;
+            el.loop = true;
+            // Intentar reproducir automáticamente cuando el elemento esté listo
+            el.play().catch(() => {
+              // El navegador bloqueó el autoplay
+            });
+          }
+        }}
         src="/love..mp3"
         loop
         preload="auto"
         playsInline
-        autoPlay
-        muted={false}
         style={{ display: 'none' }}
-        onPlay={() => {
-          setIsPlaying(true);
-          hasStartedRef.current = true;
-          setHasStarted(true);
-        }}
+        onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
-        onLoadedData={() => {
-          // Cuando el audio está listo, intentar reproducir si aún no se ha iniciado
-          if (!hasStartedRef.current && audioRef.current) {
-            audioRef.current.play().catch(() => {});
-          }
-        }}
       />
 
       <button
         type="button"
         onClick={togglePlayback}
-        className="fixed bottom-4 right-4 z-50 rounded-full bg-white/10 px-4 py-2 text-xs text-white backdrop-blur-md hover:bg-white/20 transition"
+        onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        className="fixed top-4 right-4 z-50 rounded-full bg-white/10 px-4 py-2 text-xs text-white backdrop-blur-md hover:bg-white/20 transition"
+        style={{ pointerEvents: 'auto' }}
       >
         {isPlaying ? 'Pausar música' : 'Reproducir música'}
       </button>
