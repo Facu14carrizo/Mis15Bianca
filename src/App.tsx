@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 import Hero from './components/Hero';
 import EventDetails from './components/EventDetails';
@@ -15,24 +15,85 @@ function App() {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const hasTriedAutoplay = useRef(false);
+  const userInteracted = useRef(false);
 
+  // Función para inicializar el audio con event listeners
+  const initializeAudio = useCallback(() => {
+    if (!audioRef.current) {
+      const audio = new Audio('/love..mp3');
+      audio.loop = true;
+      audio.volume = 0.7; // Volumen moderado
+      
+      // Agregar event listeners para sincronizar el estado
+      audio.addEventListener('play', () => setIsPlaying(true));
+      audio.addEventListener('pause', () => setIsPlaying(false));
+      audio.addEventListener('ended', () => setIsPlaying(false));
+      
+      audioRef.current = audio;
+    }
+    return audioRef.current;
+  }, []);
+
+  // Función para intentar reproducir el audio
+  const tryPlayAudio = useCallback(async () => {
+    const audio = initializeAudio();
+
+    // Verificar si ya está reproduciéndose usando la propiedad del audio
+    if (audio && !audio.paused) {
+      return true;
+    }
+
+    if (audio) {
+      try {
+        await audio.play();
+        return true;
+      } catch (error) {
+        // El navegador bloqueó el autoplay
+        return false;
+      }
+    }
+    return false;
+  }, [initializeAudio]);
+
+  // Intentar reproducir automáticamente al cargar
   useEffect(() => {
-    const audio = new Audio('/love..mp3');
-    audio.loop = true;
-    audioRef.current = audio;
+    if (!hasTriedAutoplay.current) {
+      hasTriedAutoplay.current = true;
+      tryPlayAudio();
+    }
+  }, [tryPlayAudio]);
 
-    audio
-      .play()
-      .then(() => {
-        setIsPlaying(true);
-      })
-      .catch(() => {
-        setIsPlaying(false);
-      });
+  // Intentar reproducir cuando el usuario interactúa con la página
+  useEffect(() => {
+    const handleUserInteraction = () => {
+      if (!userInteracted.current) {
+        userInteracted.current = true;
+        if (!audioRef.current?.paused) return;
+        tryPlayAudio();
+      }
+    };
+
+    // Escuchar múltiples eventos de interacción
+    const events = ['click', 'scroll', 'touchstart', 'keydown', 'mousemove'];
+    events.forEach((event) => {
+      document.addEventListener(event, handleUserInteraction, { once: true });
+    });
 
     return () => {
-      audio.pause();
-      audioRef.current = null;
+      events.forEach((event) => {
+        document.removeEventListener(event, handleUserInteraction);
+      });
+    };
+  }, [tryPlayAudio]);
+
+  // Limpiar el audio al desmontar
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
     };
   }, []);
 
@@ -44,24 +105,12 @@ function App() {
   };
 
   const togglePlayback = async () => {
-    if (!audioRef.current) {
-      const audio = new Audio('/love..mp3');
-      audio.loop = true;
-      audioRef.current = audio;
-    }
+    const audio = initializeAudio();
 
-    if (!audioRef.current) return;
-
-    if (isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
+    if (audio.paused) {
+      await tryPlayAudio();
     } else {
-      try {
-        await audioRef.current.play();
-        setIsPlaying(true);
-      } catch {
-        // Silenciar errores de autoplay bloqueado por el navegador
-      }
+      audio.pause();
     }
   };
 
