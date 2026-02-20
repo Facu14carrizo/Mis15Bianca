@@ -15,7 +15,6 @@ function App() {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [showOverlay, setShowOverlay] = useState(true);
   const hasTriedAutoplay = useRef(false);
   const userInteracted = useRef(false);
 
@@ -51,26 +50,12 @@ function App() {
   useEffect(() => {
     if (!hasTriedAutoplay.current && audioRef.current) {
       hasTriedAutoplay.current = true;
-      tryPlayAudio().then((success) => {
-        // Si se reproduce exitosamente, ocultar el overlay después de un breve delay
-        if (success) {
-          setTimeout(() => setShowOverlay(false), 500);
-        }
-      });
+      tryPlayAudio();
     }
   }, [tryPlayAudio]);
 
-  // Manejar el overlay inicial y reproducir música
-  const handleOverlayClick = useCallback(async () => {
-    setShowOverlay(false);
-    userInteracted.current = true;
-    await tryPlayAudio();
-  }, [tryPlayAudio]);
-
-  // Intentar reproducir cuando el usuario interactúa con la página (después de quitar overlay)
+  // Reproducir música cuando el usuario interactúa con la página
   useEffect(() => {
-    if (showOverlay) return; // No hacer nada si el overlay está visible
-
     const handleUserInteraction = () => {
       if (!userInteracted.current) {
         userInteracted.current = true;
@@ -79,8 +64,8 @@ function App() {
       }
     };
 
-    // Escuchar múltiples eventos de interacción
-    const events = ['click', 'scroll', 'touchstart', 'keydown'];
+    // Escuchar múltiples eventos de interacción (click, touch, scroll, etc.)
+    const events = ['click', 'touchstart', 'scroll', 'keydown', 'mousemove'];
     events.forEach((event) => {
       document.addEventListener(event, handleUserInteraction, { once: true });
     });
@@ -90,7 +75,7 @@ function App() {
         document.removeEventListener(event, handleUserInteraction);
       });
     };
-  }, [tryPlayAudio, showOverlay]);
+  }, [tryPlayAudio]);
 
   // Limpiar el audio al desmontar
   useEffect(() => {
@@ -122,22 +107,6 @@ function App() {
 
   return (
     <div className="relative min-h-screen bg-[#0A0A23]">
-      {/* Overlay inicial para activar audio en móviles */}
-      {showOverlay && (
-        <div
-          onClick={handleOverlayClick}
-          onTouchStart={handleOverlayClick}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0A0A23]/95 backdrop-blur-sm cursor-pointer"
-          style={{ touchAction: 'manipulation' }}
-        >
-          <div className="text-center text-white px-4">
-            <div className="mb-4 text-4xl animate-pulse">🎵</div>
-            <p className="text-lg font-semibold mb-2">Toca para comenzar</p>
-            <p className="text-sm opacity-75">La música comenzará automáticamente</p>
-          </div>
-        </div>
-      )}
-
       {/* Elemento audio HTML con autoplay para mejor compatibilidad */}
       <audio
         ref={audioRef}
