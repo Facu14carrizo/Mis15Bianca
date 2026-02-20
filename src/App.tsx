@@ -15,53 +15,43 @@ function App() {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [hasInteracted, setHasInteracted] = useState(false);
-  const hasTriedAutoplay = useRef(false);
-  const userInteracted = useRef(false);
-  const audioReady = useRef(false);
+  const hasStartedRef = useRef(false);
 
-  // Función robusta para reproducir el audio
-  const tryPlayAudio = useCallback(async () => {
+  // Función simple y directa para reproducir el audio
+  const startAudio = useCallback(async () => {
+    if (hasStartedRef.current) return;
+    
     const audio = audioRef.current;
-    if (!audio) return false;
+    if (!audio) return;
 
     // Si ya está reproduciéndose, no hacer nada
     if (!audio.paused) {
-      return true;
+      hasStartedRef.current = true;
+      return;
     }
 
-    // Asegurar que el audio esté listo
-    if (audio.readyState < 2) {
-      // Si no está cargado, esperar a que se cargue
-      await new Promise<void>((resolve) => {
-        const handleCanPlay = () => {
-          audio.removeEventListener('canplay', handleCanPlay);
-          resolve();
-        };
-        audio.addEventListener('canplay', handleCanPlay);
-        audio.load(); // Forzar carga
-      });
+    // Asegurar que el audio esté cargado
+    if (audio.readyState === 0) {
+      audio.load();
     }
 
     try {
-      // Múltiples intentos con diferentes estrategias
-      await audio.play();
-      audioReady.current = true;
-      return true;
-    } catch (error) {
-      // Si falla, intentar con play() sin await
-      try {
-        const playPromise = audio.play();
-        if (playPromise !== undefined) {
-          await playPromise;
-          audioReady.current = true;
-          return true;
-        }
-      } catch (e) {
-        // El navegador bloqueó el autoplay
-        return false;
+      // Intentar reproducir directamente
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        await playPromise;
+        hasStartedRef.current = true;
       }
-      return false;
+    } catch (error) {
+      // Si falla, intentar de nuevo inmediatamente sin await
+      try {
+        audio.play().catch(() => {
+          // Silenciar errores adicionales
+        });
+        hasStartedRef.current = true;
+      } catch (e) {
+        // Ignorar errores
+      }
     }
   }, []);
 
@@ -75,81 +65,62 @@ function App() {
       
       // Precargar inmediatamente
       audio.load();
-      
-      // Marcar como listo cuando pueda reproducirse
-      const handleCanPlay = () => {
-        audioReady.current = true;
-      };
-      audio.addEventListener('canplay', handleCanPlay);
-      
-      return () => {
-        audio.removeEventListener('canplay', handleCanPlay);
-      };
     }
   }, []);
 
-  // Intentar reproducir automáticamente al cargar
-  useEffect(() => {
-    if (!hasTriedAutoplay.current) {
-      hasTriedAutoplay.current = true;
-      // Esperar un poco para que el audio se inicialice
-      setTimeout(() => {
-        tryPlayAudio();
-      }, 100);
-    }
-  }, [tryPlayAudio]);
+  // Función para manejar cualquier interacción del usuario
+  const handleInteraction = useCallback(() => {
+    startAudio();
+  }, [startAudio]);
 
-  // Función agresiva para manejar interacciones del usuario
-  const handleUserInteraction = useCallback(async (e?: Event) => {
-    if (!userInteracted.current) {
-      userInteracted.current = true;
-      setHasInteracted(true);
-      
-      // Intentar reproducir inmediatamente sin bloquear otros eventos
-      if (audioRef.current && audioRef.current.paused) {
-        // Intentar reproducir inmediatamente
-        try {
-          await tryPlayAudio();
-        } catch (error) {
-          // Si falla, intentar de nuevo en el siguiente frame
-          requestAnimationFrame(async () => {
-            await tryPlayAudio();
-          });
-        }
+  // Agregar listeners globales de forma más simple y directa
+  useEffect(() => {
+    // Función que se ejecuta en cualquier interacción
+    const globalHandler = () => {
+      if (!hasStartedRef.current) {
+        startAudio();
       }
-    }
-  }, [tryPlayAudio]);
+    };
 
-  // Agregar listeners de interacción de forma más agresiva
-  useEffect(() => {
-    // Eventos de puntero y touch (más específicos para móviles)
-    const touchEvents = ['touchstart', 'touchend', 'touchmove'];
-    const pointerEvents = ['pointerdown', 'pointerup'];
-    const mouseEvents = ['click', 'mousedown', 'mouseup'];
-    const otherEvents = ['keydown', 'keyup', 'scroll', 'wheel', 'mousemove'];
-
-    // Para eventos touch, usar capture phase sin passive para poder controlar mejor
+    // Eventos más importantes para móviles - usar passive: true para mejor rendimiento
+    const touchEvents = ['touchstart', 'touchend'];
+    const otherEvents = ['click', 'pointerdown', 'mousedown', 'keydown'];
+    
+    // Agregar listeners en fase de captura para capturarlos primero
     touchEvents.forEach((event) => {
-      document.addEventListener(event, handleUserInteraction, { capture: true, passive: true });
-      window.addEventListener(event, handleUserInteraction, { capture: true, passive: true });
-      document.body.addEventListener(event, handleUserInteraction, { capture: true, passive: true });
+      document.addEventListener(event, globalHandler, { capture: true, passive: true });
+      window.addEventListener(event, globalHandler, { capture: true, passive: true });
+      document.body.addEventListener(event, globalHandler, { capture: true, passive: true });
     });
 
-    // Para otros eventos, usar passive
-    [...pointerEvents, ...mouseEvents, ...otherEvents].forEach((event) => {
-      document.addEventListener(event, handleUserInteraction, { capture: true, passive: true });
-      window.addEventListener(event, handleUserInteraction, { capture: true, passive: true });
-      document.body.addEventListener(event, handleUserInteraction, { capture: true, passive: true });
+    otherEvents.forEach((event) => {
+      document.addEventListener(event, globalHandler, { capture: true, passive: true });
+      window.addEventListener(event, globalHandler, { capture: true, passive: true });
     });
+
+    // También escuchar scroll
+    const scrollHandler = () => {
+      if (!hasStartedRef.current) {
+        startAudio();
+      }
+    };
+    window.addEventListener('scroll', scrollHandler, { passive: true });
+    document.addEventListener('scroll', scrollHandler, { passive: true });
 
     return () => {
-      [...touchEvents, ...pointerEvents, ...mouseEvents, ...otherEvents].forEach((event) => {
-        document.removeEventListener(event, handleUserInteraction, { capture: true } as EventListenerOptions);
-        window.removeEventListener(event, handleUserInteraction, { capture: true } as EventListenerOptions);
-        document.body.removeEventListener(event, handleUserInteraction, { capture: true } as EventListenerOptions);
+      touchEvents.forEach((event) => {
+        document.removeEventListener(event, globalHandler, { capture: true });
+        window.removeEventListener(event, globalHandler, { capture: true });
+        document.body.removeEventListener(event, globalHandler, { capture: true });
       });
+      otherEvents.forEach((event) => {
+        document.removeEventListener(event, globalHandler, { capture: true });
+        window.removeEventListener(event, globalHandler, { capture: true });
+      });
+      window.removeEventListener('scroll', scrollHandler);
+      document.removeEventListener('scroll', scrollHandler);
     };
-  }, [handleUserInteraction]);
+  }, [startAudio]);
 
   // Limpiar el audio al desmontar
   useEffect(() => {
@@ -168,35 +139,34 @@ function App() {
     }
   };
 
-  const togglePlayback = async () => {
+  const togglePlayback = async (e?: React.MouseEvent) => {
+    // Si es el primer click, activar el audio
+    if (!hasStartedRef.current) {
+      e?.preventDefault();
+      e?.stopPropagation();
+      await startAudio();
+      return;
+    }
+
     const audio = audioRef.current;
     if (!audio) return;
 
     if (audio.paused) {
-      await tryPlayAudio();
+      await startAudio();
     } else {
       audio.pause();
+      setIsPlaying(false);
     }
   };
 
   return (
     <div 
       className="relative min-h-screen bg-[#0A0A23]"
-      onClick={handleUserInteraction}
-      onTouchStart={handleUserInteraction}
-      style={{ touchAction: 'manipulation' }}
+      onClick={handleInteraction}
+      onTouchStart={handleInteraction}
+      onPointerDown={handleInteraction}
+      style={{ touchAction: 'manipulation', WebkitTouchCallout: 'none' }}
     >
-      {/* Wrapper invisible que captura todos los eventos de interacción */}
-      {!hasInteracted && (
-        <div
-          className="fixed inset-0 z-[9999]"
-          onClick={handleUserInteraction}
-          onTouchStart={handleUserInteraction}
-          onPointerDown={handleUserInteraction}
-          style={{ touchAction: 'manipulation' }}
-        />
-      )}
-
       {/* Elemento audio HTML con todas las optimizaciones para móviles */}
       <audio
         ref={audioRef}
@@ -209,12 +179,6 @@ function App() {
         style={{ display: 'none' }}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
-        onLoadedData={() => {
-          audioReady.current = true;
-        }}
-        onCanPlay={() => {
-          audioReady.current = true;
-        }}
       />
 
       <button
