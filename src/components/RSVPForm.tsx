@@ -13,15 +13,15 @@ export default function RSVPForm({ id }: RSVPFormProps) {
     // Placeholder number, waiting for user input
     const phoneNumber = '5491121543734';
     const message = attending
-      ? '¡Hola! Quiero confirmar mi asistencia a los 15 de Bianca'
-      : 'Hola, lamentablemente no podré asistir a los 15 de Bianca.';
+      ? '¡Hola! Quiero confirmar mi asistencia a los 15 de Delfi'
+      : 'Hola, lamentablemente no podré asistir a los 15 de Delfi.';
 
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 
   return (
-    <section id={id} className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#1E1E4B] to-[#0A0A23]">
+    <section id={id} className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#2D004F] to-black">
       <div className="max-w-2xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -46,7 +46,7 @@ export default function RSVPForm({ id }: RSVPFormProps) {
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="bg-gradient-to-br from-[#1E1E4B]/90 to-[#2A2A8F]/70 backdrop-blur-xl rounded-3xl p-8 sm:p-12 border-2 border-[#C0C0C0]/40"
+          className="bg-gradient-to-br from-[#2D004F]/90 to-black/70 backdrop-blur-xl rounded-3xl p-8 sm:p-12 border-2 border-silver/40"
           style={{
             boxShadow: '0 0 40px rgba(192, 192, 192, 0.4), 0 20px 60px rgba(0, 0, 0, 0.5)'
           }}
@@ -63,8 +63,8 @@ export default function RSVPForm({ id }: RSVPFormProps) {
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setAttending(true)}
                   className={`px-8 py-4 rounded-xl font-bold text-lg transition-all min-w-[140px] whitespace-nowrap ${attending
-                    ? 'bg-gradient-to-r from-[#C0C0C0] to-[#E5E5E5] text-[#1E1E4B] shadow-lg shadow-[#C0C0C0]/50'
-                    : 'bg-[#0A0A23]/60 text-[#C0C0C0] border-2 border-[#C0C0C0]/30'
+                    ? 'bg-gradient-to-r from-[#4B0082] to-[#2D004F] text-white shadow-lg shadow-[#4B0082]/50'
+                    : 'bg-black/60 text-silver border-2 border-silver/30'
                     }`}
                   style={{ fontFamily: "'Poppins', sans-serif" }}
                 >
@@ -76,8 +76,8 @@ export default function RSVPForm({ id }: RSVPFormProps) {
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setAttending(false)}
                   className={`px-8 py-4 rounded-xl font-bold text-lg transition-all min-w-[140px] whitespace-nowrap ${!attending
-                    ? 'bg-gradient-to-r from-[#C0C0C0] to-[#E5E5E5] text-[#1E1E4B] shadow-lg shadow-[#C0C0C0]/50'
-                    : 'bg-[#0A0A23]/60 text-[#C0C0C0] border-2 border-[#C0C0C0]/30'
+                    ? 'bg-gradient-to-r from-[#4B0082] to-[#2D004F] text-white shadow-lg shadow-[#4B0082]/50'
+                    : 'bg-black/60 text-silver border-2 border-silver/30'
                     }`}
                   style={{ fontFamily: "'Poppins', sans-serif" }}
                 >

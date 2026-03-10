@@ -134,7 +134,7 @@ function App() {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#0A0A23]">
+    <div className="relative min-h-screen bg-[#000000]">
       {/* Elemento audio HTML con autoplay para mejor compatibilidad */}
       <audio
         ref={(el) => {

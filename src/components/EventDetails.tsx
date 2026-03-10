@@ -19,7 +19,7 @@ export default function EventDetails({ id }: EventDetailsProps) {
       icon: Clock,
       title: 'Horario y Fecha',
       content: '21 de marzo del 2026',
-      subtitle: <span className="text-[#FFD700] font-bold text-xl tracking-wider drop-shadow-lg">21:00 hs</span>,
+      subtitle: <span className="text-silver-bright font-bold text-xl tracking-wider drop-shadow-lg">21:00 hs</span>,
       delay: 0.4
     },
     {
@@ -29,8 +29,8 @@ export default function EventDetails({ id }: EventDetailsProps) {
       subtitle: (
         <div className="flex flex-col items-center gap-1">
           <span>Luce tu mejor outfit formal</span>
-          <span className="text-sm font-semibold text-[#FFD700] mt-2 drop-shadow-md">
-            ⚠️ No está permitido usar ropa azul o plateada
+          <span className="text-sm font-semibold text-silver-bright mt-2 drop-shadow-md">
+            ⚠️ No está permitido usar ropa blanca o plateada
           </span>
         </div>
       ),
@@ -46,7 +46,7 @@ export default function EventDetails({ id }: EventDetailsProps) {
   ];
 
   return (
-    <section id={id} className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#0A0A23] via-[#1E1E4B] to-[#0A0A23]">
+    <section id={id} className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-black via-[#2D004F] to-black">
       <div className="max-w-6xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -98,15 +98,15 @@ export default function EventDetails({ id }: EventDetailsProps) {
                 scale: 1.05,
                 boxShadow: '0 0 30px rgba(192, 192, 192, 0.4), 0 0 60px rgba(42, 42, 143, 0.6)'
               }}
-              className="group relative flex flex-col items-center justify-center text-center bg-gradient-to-br from-[#1E1E4B]/90 to-[#0A0A23]/90 backdrop-blur-xl rounded-3xl p-8 border border-[#C0C0C0]/20 transition-all duration-300 overflow-hidden"
+              className="group relative flex flex-col items-center justify-center text-center bg-gradient-to-br from-[#2D004F]/90 to-black/90 backdrop-blur-xl rounded-3xl p-8 border border-silver/20 transition-all duration-300 overflow-hidden"
               style={{
                 boxShadow: '0 10px 30px -10px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(192, 192, 192, 0.05)'
               }}
             >
               <div className="absolute inset-0 bg-gradient-radial from-[#C0C0C0]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-              <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#2A2A8F] rounded-full blur-[60px] opacity-40 group-hover:opacity-60 transition-opacity duration-300" />
-              <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-[#C0C0C0] rounded-full blur-[60px] opacity-10 group-hover:opacity-20 transition-opacity duration-300" />
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#4B0082] rounded-full blur-[60px] opacity-40 group-hover:opacity-60 transition-opacity duration-300" />
+              <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-silver rounded-full blur-[60px] opacity-10 group-hover:opacity-20 transition-opacity duration-300" />
 
               <motion.div
                 animate={{

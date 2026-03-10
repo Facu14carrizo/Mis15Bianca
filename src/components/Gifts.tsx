@@ -5,8 +5,8 @@ import { useState } from 'react';
 export default function Gifts() {
   const [copied, setCopied] = useState(false);
   const [cvuCopied, setCvuCopied] = useState(false);
-  const alias = 'biancu.105';
-  const cvu = '0000003100018609278335';
+  const alias = 'delfi.15.regalo';
+  const cvu = '0000000000000000000000';
 
   const handleCopy = () => {
     navigator.clipboard.writeText(alias);
@@ -21,7 +21,7 @@ export default function Gifts() {
   };
 
   return (
-    <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#0A0A23] to-[#1E1E4B] overflow-hidden">
+    <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-black to-[#2D004F] overflow-hidden">
       <div className="absolute inset-0 opacity-30">
         {[...Array(20)].map((_, i) => (
           <motion.div
@@ -69,8 +69,8 @@ export default function Gifts() {
             }}
             className="inline-block mb-6"
           >
-            <div className="p-6 bg-gradient-to-br from-[#C0C0C0] to-[#E5E5E5] rounded-full shadow-2xl">
-              <Gift className="w-16 h-16 text-[#1E1E4B]" strokeWidth={2} />
+            <div className="p-6 bg-gradient-to-br from-silver to-silver-bright rounded-full shadow-2xl">
+              <Gift className="w-16 h-16 text-[#2D004F]" strokeWidth={2} />
             </div>
           </motion.div>
 
@@ -128,8 +128,8 @@ export default function Gifts() {
                   <p className="text-white text-lg sm:text-xl font-medium break-all" style={{ fontFamily: "'Poppins', sans-serif" }}>{cvu}</p>
                 </div>
                 <div>
-                  <p className="text-[#C0C0C0] text-sm mb-1 uppercase tracking-wider" style={{ fontFamily: "'Poppins', sans-serif" }}>Titular</p>
-                  <p className="text-white text-lg font-medium" style={{ fontFamily: "'Poppins', sans-serif" }}>Bianca Angelina Paniagua Loa</p>
+                  <p className="text-silver text-sm mb-1 uppercase tracking-wider" style={{ fontFamily: "'Poppins', sans-serif" }}>Titular</p>
+                  <p className="text-white text-lg font-medium" style={{ fontFamily: "'Poppins', sans-serif" }}>Delfina [Apellido]</p>
                 </div>
               </div>
             </div>
@@ -139,7 +139,7 @@ export default function Gifts() {
                 onClick={handleCopy}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="w-full sm:w-auto min-w-[200px] flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-[#C0C0C0] to-[#E5E5E5] text-[#1E1E4B] font-bold text-lg rounded-full transition-all duration-300"
+                className="w-full sm:w-auto min-w-[200px] flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-silver to-silver-bright text-[#2D004F] font-bold text-lg rounded-full transition-all duration-300"
                 style={{
                   boxShadow: '0 0 20px rgba(192, 192, 192, 0.5)',
                   fontFamily: "'Poppins', sans-serif"

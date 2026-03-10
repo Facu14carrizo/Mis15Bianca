@@ -3,7 +3,7 @@ import { Heart } from 'lucide-react';
 
 export default function Footer() {
   return (
-    <footer className="relative py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#0A0A23] to-black">
+    <footer className="relative py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-black to-[#2D004F]">
       <div className="max-w-4xl mx-auto">
         <div className="absolute inset-0 opacity-20">
           {[...Array(30)].map((_, i) => (
@@ -49,10 +49,10 @@ export default function Footer() {
                 className="text-[6rem] xs:text-[7rem] sm:text-[10rem] md:text-[12rem] lg:text-[14rem] font-script text-white leading-[0.8]"
                 style={{
                   fontFamily: "'Great Vibes', cursive",
-                  textShadow: '0 0 40px rgba(192, 192, 192, 0.6)'
+                  textShadow: '0 0 40px rgba(138, 43, 226, 0.6)'
                 }}
               >
-                Bianca
+                Delfi
               </h3>
             </div>
             <div className="flex items-center justify-center gap-2">
@@ -112,7 +112,7 @@ export default function Footer() {
                 WaveFrame Studio
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#e60073] transition-all duration-300 group-hover:w-full"></span>
               </a>
-              para Bianca 🌟
+              para Delfi 🌟
             </p>
             <p className="text-[#C0C0C0]/60 text-sm mt-2" style={{ fontFamily: "'Poppins', sans-serif" }}>
               Una noche bajo las estrellas
